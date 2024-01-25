@@ -193,6 +193,45 @@ def get_races_by_year(year):
         return formatted_data
     else:
         return f"no data available for the year {year}"
+    
+def get_race_url(year, location):
+    url = f'https://www.formula1.com/en/results.html/{year}/races.html'
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+
+    if table:
+        for row in table.find_all('tr'):  
+            td = row.find('td', class_='dark bold')
+            if td and location in td.get_text(strip=True):
+                a_tag = td.find('a', href=True)
+                if a_tag:
+                    return a_tag['href']
+    
+def get_winner_by_race(year, race):
+    url = get_race_url(year, race)
+    url = 'https://www.formula1.com' + url
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+
+    if table:
+        try:
+            row = table.find_all('tr')[1] 
+            name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
+            full_name = ' '.join(part.get_text(strip=True) for part in name_parts if part.get_text(strip=True))
+            car = row.find_all('td')[4].get_text(strip=True)
+            return ({
+                'driver': full_name,
+                'car': car, 
+                })
+        except IndexError:
+            return f"no driver data available for race {race} in the year {year}"
+    else:
+        return f"no data available for the year {year}"
+            
 
 while True:
     user_input = input("? ")
@@ -338,6 +377,18 @@ while True:
                 print(f"{row['location']}: {row['date']}")
         except ValueError:
             print("enter valid year")
+
+    elif len(parts) == 3 and parts[0].lower() == "winner":
+        try:
+            year = parts[1]
+            race = parts[2]
+            
+            winner = get_winner_by_race(year, race)
+
+            print(f"{winner['driver']}: {winner['car']}")
+        except ValueError:
+            print("enter valid year")
+            
     
     else:
         print("invalid command")
