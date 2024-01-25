@@ -254,6 +254,48 @@ def get_pole_pos(year, location):
             return f"no driver data available for {location} in the year {year}"
     else:
         return f"no data available for the year {year}"
+    
+def get_race_result(year, race):
+    url = get_race_url(year, race)
+    url = 'https://www.formula1.com' + url
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+
+    formatted_data = []
+
+    if table:
+        try:
+            row = table.find_all('tr')[1] 
+            position = row.find_all('td')[1].get_text(strip=True)
+            name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
+            full_name = ' '.join(part.get_text(strip=True) for part in name_parts)
+            car = row.find_all('td')[4].get_text(strip=True)
+            time = "interval"
+            formatted_data.append({
+                    'position': position,
+                    'driver': full_name,
+                    'car': car, 
+                    'time': time
+                    })
+            for row in table.find_all('tr')[2:]:  
+                position = row.find_all('td')[1].get_text(strip=True)
+                name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
+                full_name = ' '.join(part.get_text(strip=True) for part in name_parts if part.get_text(strip=True))
+                car = row.find_all('td')[4].get_text(strip=True)
+                time = row.find_all('td')[6].get_text(strip=True)
+                formatted_data.append({
+                    'position': position,
+                    'driver': full_name,
+                    'car': car, 
+                    'time': time
+                    })
+            return formatted_data
+        except IndexError:
+            return f"no driver data available for race {race} in the year {year}"
+    else:
+        return f"no data available for the year {year}"
             
 
 while True:
@@ -422,7 +464,27 @@ while True:
             print(f"{winner['driver']}: {winner['car']}")
         except ValueError:
             print("enter valid year")
-    
+
+    elif len(parts) == 3 and parts[0] == "race-result":
+        try:
+            year = parts[1]
+            race = parts[2]
+            race_result = get_race_result(year, race)
+            for row in race_result:
+                print(f"{row['position']}. {row['driver']}({row['car']}): {row['time']}")
+        except (ValueError, TypeError):
+            print("error: enter valid year")
+
+    elif len(parts) == 3 and parts[0] == "qualifying-result":
+        try:
+            year = parts[1]
+            race = parts[2]
+            race_result = get_race_result(year, race)
+            for row in race_result:
+                print(f"{row['position']}. {row['driver']}({row['car']}): {row['time']}")
+        except (ValueError, TypeError):
+            print("error: enter valid year")
+
     else:
         print("invalid command")
 
