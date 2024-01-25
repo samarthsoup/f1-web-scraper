@@ -24,6 +24,28 @@ def get_drivers_championship(year):
     else:
         return f"no data available for the year {year}"
     
+def get_drivers_championship_no_points(year):
+    url = f'https://www.formula1.com/en/results.html/{year}/drivers.html'
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+
+    formatted_data = []
+    if table:
+        for row in table.find_all('tr')[1:]:  
+            name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
+            full_name = ' '.join(part.get_text(strip=True) for part in name_parts if part.get_text(strip=True))
+            position = row.find_all('td')[1].get_text(strip=True)
+            formatted_data.append({
+                'position': position,
+                'driver': full_name, 
+                })
+        return formatted_data
+    else:
+        return f"no data available for the year {year}"
+    
+
 def get_constructors_championship(year):
     url = f'https://www.formula1.com/en/results.html/{year}/team.html'
     response = requests.get(url)
@@ -34,11 +56,30 @@ def get_constructors_championship(year):
     formatted_data = []
     if table:
         for row in table.find_all('tr')[1:]:
-            data = [cell.get_text(strip=True) for cell in row.find_all('td')]
+            data = [row.find_all('td')[i].get_text(strip=True) for i in [1, 2, 3]]
             formatted_data.append({
-                'position': data[1],
-                'team': data[2], 
-                'points': int(data[3])
+                'position': data[0],
+                'team': data[1], 
+                'points': int(data[2])
+                })
+        return formatted_data
+    else:
+        return f"no data available for the year {year}"
+    
+def get_constructors_championship_no_points(year):
+    url = f'https://www.formula1.com/en/results.html/{year}/team.html'
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+
+    formatted_data = []
+    if table:
+        for row in table.find_all('tr')[1:]:
+            data = [row.find_all('td')[i].get_text(strip=True) for i in [1, 2]]
+            formatted_data.append({
+                'position': data[0],
+                'team': data[1], 
                 })
         return formatted_data
     else:
@@ -71,4 +112,29 @@ while True:
                 print("enter valid year")
         else:
             print("unknown flag: use -c or -d")
+    
+    elif len(parts) == 4 and parts[0].lower() == "championship":
+        if parts[3].lower() == "!p":
+            type_char = parts[1]
+            year = parts[2]
+
+            if type_char == '-d':
+                try:
+                    drivers_list = get_drivers_championship_no_points(year)
+                    for row in drivers_list:
+                        print(f"{row['position']}.{row['driver']}")
+                except (ValueError, TypeError) as e:
+                    print("error: enter valid year")
+            elif type_char == '-c':
+                try:
+                    constructors_list = get_constructors_championship_no_points(year)
+                    for row in constructors_list:
+                        print(f"{row['position']}.{row['team']}")
+                except ValueError:
+                    print("enter valid year")
+            else:
+                print("unknown flag: use -c or -d")
+        else:
+            print("unknown flag: use !p")
+
             
