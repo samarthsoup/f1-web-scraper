@@ -69,6 +69,28 @@ def get_driver_at_position(year, position):
     else:
         return f"no data available for the year {year}"
     
+def get_driver_at_position_no_points(year, position):
+    url = f'https://www.formula1.com/en/results.html/{year}/drivers.html'
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+
+    if table:
+        try:
+            row = table.find_all('tr')[int(position)]  
+            name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
+            full_name = ' '.join(part.get_text(strip=True) for part in name_parts)
+            return {
+                'driver': full_name,
+            }
+        except IndexError:
+            return f"no driver data available for position {position} in the year {year}"
+        except TypeError:
+            return f"ensure that position is an integer"
+    else:
+        return f"no data available for the year {year}"
+    
 
 def get_constructors_championship(year):
     url = f'https://www.formula1.com/en/results.html/{year}/team.html'
@@ -123,6 +145,27 @@ def get_constructor_at_position(year, position):
             return {
                 'team': data[0],
                 'points': int(data[1])
+            }
+        except IndexError:
+            return f"no driver data available for position {position} in the year {year}"
+        except TypeError:
+            return f"ensure that position is an integer"
+    else:
+        return f"no data available for the year {year}"
+    
+def get_constructor_at_position_no_points(year, position):
+    url = f'https://www.formula1.com/en/results.html/{year}/team.html'
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+
+    if table:
+        try:
+            row = table.find_all('tr')[int(position)]  
+            data = [row.find_all('td')[i].get_text(strip=True) for i in [2]]
+            return {
+                'team': data[0],
             }
         except IndexError:
             return f"no driver data available for position {position} in the year {year}"
@@ -202,5 +245,31 @@ while True:
                 print("enter valid year")
         else:
             print("unknown flag: use -c or -d")
+
+    elif len(parts) == 5 and parts[0].lower() == "at-pos":
+        if parts[4] == "!p":
+            type_char = parts[1]
+            year = parts[2]
+            pos = parts[3]
+
+            if type_char == '-d':
+                try:
+                    driver = get_driver_at_position(year, pos)
+                    print(f"{driver['driver']}")
+                except (ValueError, TypeError):
+                        print("error: enter valid year")
+            elif type_char == '-c':
+                try:
+                    constructor = get_constructor_at_position(year, pos)
+                    print(f"{constructor['team']}")
+                except (ValueError, TypeError):
+                    print("enter valid year")
+            else:
+                print("unknown flag: use -c or -d")
+        else:
+            print("unknown flag: use !p")
+
+    else:
+        print("invalid command")
 
             
