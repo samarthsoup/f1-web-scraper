@@ -47,6 +47,10 @@
 >
 > the entire qualifying of that race in that year
 
+> <code>race-result:$year:%race</code>
+
+> <code>qualifying-result:$year:$race</code>
+
 ## flags:
 
 > <code>-!p</code>

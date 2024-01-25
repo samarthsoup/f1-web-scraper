@@ -210,7 +210,11 @@ def get_race_url(year, location):
                     return a_tag['href']
     
 def get_winner_by_race(year, race):
-    url = get_race_url(year, race)
+    try:
+        url = get_race_url(year, race)
+    except:
+        print("no such race exists")
+
     url = 'https://www.formula1.com' + url
     response = requests.get(url)
     content = response.content
@@ -229,29 +233,6 @@ def get_winner_by_race(year, race):
                 })
         except IndexError:
             return f"no driver data available for race {race} in the year {year}"
-    else:
-        return f"no data available for the year {year}"
-    
-def get_pole_pos(year, location):
-    url = get_race_url(year, location).strip('race-result.html')
-    url = 'https://www.formula1.com' + url + 'qualifying.html'
-    response = requests.get(url)
-    content = response.content
-    soup = BeautifulSoup(content, 'html.parser')
-    table = soup.find('table', class_='resultsarchive-table')
-        
-    if table:
-        try:
-            row = table.find_all('tr')[1] 
-            name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
-            full_name = ' '.join(part.get_text(strip=True) for part in name_parts)
-            car = row.find_all('td')[4].get_text(strip=True)
-            return ({
-                'driver': full_name,
-                'car': car, 
-                })
-        except IndexError:
-            return f"no driver data available for {location} in the year {year}"
     else:
         return f"no data available for the year {year}"
     
@@ -290,6 +271,115 @@ def get_race_result(year, race):
                     'driver': full_name,
                     'car': car, 
                     'time': time
+                    })
+            return formatted_data
+        except IndexError:
+            return f"no driver data available for race {race} in the year {year}"
+    else:
+        return f"no data available for the year {year}"
+    
+def get_pole_pos(year, race):
+    url = get_race_url(year, race).strip('race-result.html')
+    url = 'https://www.formula1.com' + url + 'qualifying.html'
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+        
+    if table:
+        try:
+            row = table.find_all('tr')[1] 
+            name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
+            full_name = ' '.join(part.get_text(strip=True) for part in name_parts)
+            car = row.find_all('td')[4].get_text(strip=True)
+            time = row.find_all('td')[7].get_text(strip=True)
+            return ({
+                'driver': full_name,
+                'car': car, 
+                'time': time
+                })
+        except IndexError:
+            return f"no driver data available for {race} in the year {year}"
+    else:
+        return f"no data available for the year {year}"
+    
+def get_qualifying_result_from_2006(year, race):
+    url = get_race_url(year, race).strip('race-result.html')
+    url = 'https://www.formula1.com' + url + 'qualifying.html'
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+
+    formatted_data = []
+
+    if table:
+        try:
+            for row in table.find_all('tr')[1:11]:  
+                position = row.find_all('td')[1].get_text(strip=True)
+                name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
+                full_name = ' '.join(part.get_text(strip=True) for part in name_parts if part.get_text(strip=True))
+                car = row.find_all('td')[4].get_text(strip=True)
+                time = row.find_all('td')[7].get_text(strip=True)
+                formatted_data.append({
+                    'position': position,
+                    'driver': full_name,
+                    'car': car, 
+                    'time': time + "(Q3)"
+                    })
+            for row in table.find_all('tr')[11:16]:  
+                position = row.find_all('td')[1].get_text(strip=True)
+                name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
+                full_name = ' '.join(part.get_text(strip=True) for part in name_parts if part.get_text(strip=True))
+                car = row.find_all('td')[4].get_text(strip=True)
+                time = row.find_all('td')[6].get_text(strip=True)
+                formatted_data.append({
+                    'position': position,
+                    'driver': full_name,
+                    'car': car, 
+                    'time': time + "(Q2)"
+                    })
+            for row in table.find_all('tr')[16:]:  
+                position = row.find_all('td')[1].get_text(strip=True)
+                name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
+                full_name = ' '.join(part.get_text(strip=True) for part in name_parts if part.get_text(strip=True))
+                car = row.find_all('td')[4].get_text(strip=True)
+                time = row.find_all('td')[5].get_text(strip=True)
+                formatted_data.append({
+                    'position': position,
+                    'driver': full_name,
+                    'car': car, 
+                    'time': time + "(Q1)"
+                    })
+            return formatted_data
+        except IndexError:
+            return f"no driver data available for race {race} in the year {year}"
+    else:
+        return f"no data available for the year {year}"
+    
+def get_qualifying_result_before_2006(year, race):
+    url = get_race_url(year, race).strip('race-result.html')
+    url = 'https://www.formula1.com' + url + 'qualifying.html'
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+
+    formatted_data = []
+
+    if table:
+        try:
+            for row in table.find_all('tr')[1:]:  
+                position = row.find_all('td')[1].get_text(strip=True)
+                name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
+                full_name = ' '.join(part.get_text(strip=True) for part in name_parts if part.get_text(strip=True))
+                car = row.find_all('td')[4].get_text(strip=True)
+                time = row.find_all('td')[5].get_text(strip=True)
+                formatted_data.append({
+                    'position': position,
+                    'driver': full_name,
+                    'car': car, 
+                    'time': time 
                     })
             return formatted_data
         except IndexError:
@@ -461,7 +551,7 @@ while True:
             
             winner = get_pole_pos(year, race)
 
-            print(f"{winner['driver']}: {winner['car']}")
+            print(f"{winner['driver']}({winner['car']}): {winner['time']}")
         except ValueError:
             print("enter valid year")
 
@@ -477,9 +567,13 @@ while True:
 
     elif len(parts) == 3 and parts[0] == "qualifying-result":
         try:
-            year = parts[1]
+            year = int(parts[1])
             race = parts[2]
-            race_result = get_race_result(year, race)
+            if year >= 2006:
+                race_result = get_qualifying_result_from_2006(year, race)
+            else:
+                race_result = get_qualifying_result_before_2006(year, race)
+
             for row in race_result:
                 print(f"{row['position']}. {row['driver']}({row['car']}): {row['time']}")
         except (ValueError, TypeError):
