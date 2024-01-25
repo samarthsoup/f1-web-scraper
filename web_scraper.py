@@ -231,6 +231,29 @@ def get_winner_by_race(year, race):
             return f"no driver data available for race {race} in the year {year}"
     else:
         return f"no data available for the year {year}"
+    
+def get_pole_pos(year, location):
+    url = get_race_url(year, location).strip('race-result.html')
+    url = 'https://www.formula1.com' + url + 'qualifying.html'
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+        
+    if table:
+        try:
+            row = table.find_all('tr')[1] 
+            name_parts = row.find_all('span', class_=lambda x: x in ["hide-for-tablet", "hide-for-mobile"])
+            full_name = ' '.join(part.get_text(strip=True) for part in name_parts)
+            car = row.find_all('td')[4].get_text(strip=True)
+            return ({
+                'driver': full_name,
+                'car': car, 
+                })
+        except IndexError:
+            return f"no driver data available for {location} in the year {year}"
+    else:
+        return f"no data available for the year {year}"
             
 
 while True:
@@ -388,7 +411,17 @@ while True:
             print(f"{winner['driver']}: {winner['car']}")
         except ValueError:
             print("enter valid year")
+
+    elif len(parts) == 3 and parts[0] == "pole":
+        try:
+            year = parts[1]
+            race = parts[2]
             
+            winner = get_pole_pos(year, race)
+
+            print(f"{winner['driver']}: {winner['car']}")
+        except ValueError:
+            print("enter valid year")
     
     else:
         print("invalid command")
