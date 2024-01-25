@@ -173,6 +173,26 @@ def get_constructor_at_position_no_points(year, position):
             return f"ensure that position is an integer"
     else:
         return f"no data available for the year {year}"
+    
+def get_races_by_year(year):
+    url = f'https://www.formula1.com/en/results.html/{year}/races.html'
+    response = requests.get(url)
+    content = response.content
+    soup = BeautifulSoup(content, 'html.parser')
+    table = soup.find('table', class_='resultsarchive-table')
+
+    formatted_data = []
+
+    if table:
+        for row in table.find_all('tr')[1:]:  
+            data = [row.find_all('td')[i].get_text(strip=True) for i in [1, 2]]
+            formatted_data.append({
+                'location': data[0],
+                'date': data[1], 
+                })
+        return formatted_data
+    else:
+        return f"no data available for the year {year}"
 
 while True:
     user_input = input("? ")
@@ -308,7 +328,16 @@ while True:
             else:
                 print("unknown flag: use -c or -d")
         else:
-            print("unknown flag: use !p")        
+            print("unknown flag: use !p")  
+
+    elif len(parts) == 2 and parts[0].lower() == "races":
+        try:
+            year = int(parts[1])
+            races = get_races_by_year(year)
+            for row in races:
+                print(f"{row['location']}: {row['date']}")
+        except ValueError:
+            print("enter valid year")
     
     else:
         print("invalid command")
